@@ -1,19 +1,19 @@
 {
-  "name": "homebridge-plugin-name",
-  "displayName": "Plugin Name",
+  "name": "@corentind/homebridge-heatzy-chinese-multiswitch",
+  "displayName": "Heatzy Chinese Multiswitch",
   "type": "module",
   "version": "1.0.0",
   "private": true,
-  "description": "A short description about what your plugin does.",
-  "author": "Your Name",
+  "description": "Homebridge platform that connects to Heatzy account and sync Heatzy Pilote devices with chinese support.",
+  "author": "Corentin Delannoy <corentin.delannoy2@gmail.com>",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/USERNAME/GITHUB_PROJECT_NAME#readme",
+  "homepage": "https://github.com/corentind59/homebridge-heatzy-chinese-multiswitch#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME.git"
+    "url": "https://github.com/corentind59/homebridge-heatzy-chinese-multiswitch.git"
   },
   "bugs": {
-    "url": "https://github.com/USERNAME/GITHUB_PROJECT_NAME/issues"
+    "url": "https://github.com/corentind59/homebridge-heatzy-chinese-multiswitch/issues"
   },
   "keywords": [
     "homebridge-plugin"
