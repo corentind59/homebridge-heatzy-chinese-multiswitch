@@ -70,13 +70,7 @@ export class HeatzyPiloteAccessory {
     this.log.debug(`Syncing state for Heatzy Pilote ${this.device.dev_alias}...`);
     const state = await this.platform.heatzyClient.getDevdataByDeviceId(this.device.did);
     this.log.debug(`Heatzy Pilote ${this.device.dev_alias} is currently in mode ${state}.`);
-    for (const mode of this.enabledModes) {
-      if (mode === state) {
-        this.cachedStateByMode.set(mode, true);
-      } else {
-        this.cachedStateByMode.set(mode, false);
-      }
-    }
+    this.servicesByMode.get(state)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
   }
 }
 
