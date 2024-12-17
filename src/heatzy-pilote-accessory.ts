@@ -1,5 +1,5 @@
 import type { HeatzyChineseMultiswitchPlatform } from './platform.js';
-import type { PlatformAccessory, Service } from 'homebridge';
+import type { Logging, PlatformAccessory, Service } from 'homebridge';
 import { CONTROL_MODES, HeatzyBinding } from './heatzy-client.js';
 
 export class HeatzyPiloteAccessory {
@@ -11,6 +11,7 @@ export class HeatzyPiloteAccessory {
     private readonly platform: HeatzyChineseMultiswitchPlatform,
     private readonly accessory: PlatformAccessory,
     private readonly device: HeatzyBinding,
+    private readonly log: Logging,
   ) {
     this.enabledModes = [
       'COMFORT',
@@ -33,6 +34,7 @@ export class HeatzyPiloteAccessory {
   }
 
   addSwitch(mode: keyof typeof CONTROL_MODES) {
+    this.log.debug(`Adding switch for Heatzy Pilote ${this.device.dev_alias} for mode ${mode}.`);
     const service = this.accessory.getServiceById(this.platform.Service.Switch, mode) ||
       this.accessory.addService(this.platform.Service.Switch, `Heatzy Pilote ${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
 
@@ -46,15 +48,18 @@ export class HeatzyPiloteAccessory {
   }
 
   private async toggleSwitch(mode: keyof typeof CONTROL_MODES, value: boolean) {
+    this.log.debug(`Toggling switch for Heatzy Pilote ${this.device.dev_alias} in mode ${mode} with value ${value}...`);
     this.cachedStateByMode.set(mode, value);
 
     if (!value) {
       setTimeout(() => {
+        this.log.debug(`Restoring switch for Heatzy Pilote ${this.device.dev_alias} in mode ${mode}.`);
         this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
       }, 1_000);
       return;
     }
 
+    this.log.debug(`Setting Heatzy Pilote ${this.device.dev_alias} to mode ${mode} via Heatzy API.`);
     await this.platform.heatzyClient.setDeviceMode(this.device.did, mode);
     this.enabledModes
       .filter((m) => m !== mode)
@@ -62,7 +67,9 @@ export class HeatzyPiloteAccessory {
   }
 
   private async syncStateWithHeatzy() {
+    this.log.debug(`Syncing state for Heatzy Pilote ${this.device.dev_alias}...`);
     const state = await this.platform.heatzyClient.getDevdataByDeviceId(this.device.did);
+    this.log.debug(`Heatzy Pilote ${this.device.dev_alias} is currently in mode ${state}.`);
     for (const mode of this.enabledModes) {
       if (mode === state) {
         this.cachedStateByMode.set(mode, true);

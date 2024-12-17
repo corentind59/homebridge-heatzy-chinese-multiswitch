@@ -31,7 +31,7 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
       password: this.config.heatzyPassword,
     });
 
-    this.log.debug('Initializing platform: ', this.config.name);
+    this.log.debug('Initializing platform:', PLATFORM_NAME);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -57,6 +57,7 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
 
   private async syncDevicesFromHeatzy() {
     const { devices } = await this.heatzyClient.getAllBindings();
+    this.log.debug(`Discovered ${devices.length} devices from Heatzy account.`);
     const discoveredAccessoryUUIDs = new Set<string>();
 
     for (const device of devices) {
@@ -67,23 +68,24 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
       if (cachedAccessory) {
         // Restore previously configured accessory
         this.log.info(`Restoring previously configured accessory: ${device.dev_alias} (ID: ${device.did})`);
-        new HeatzyPiloteAccessory(this, cachedAccessory, device);
+        new HeatzyPiloteAccessory(this, cachedAccessory, device, this.log);
       } else {
         // Configure new accessory
         this.log.info(`Configuring new accessory: ${device.dev_alias} (ID: ${device.did})`);
 
         const newAccessory = new this.api.platformAccessory(`Heatzy Pilote ${device.dev_alias}`, uuid, Categories.SWITCH);
 
-        new HeatzyPiloteAccessory(this, newAccessory, device);
+        new HeatzyPiloteAccessory(this, newAccessory, device, this.log);
         this.cachedAccessories.set(uuid, newAccessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [newAccessory]);
       }
+    }
 
-      for (const [uuid, accessory] of this.cachedAccessories) {
-        if (!discoveredAccessoryUUIDs.has(uuid)) {
-          this.log.info('Removing existing accessory from cache:', accessory.displayName);
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        }
+    for (const [uuid, accessory] of this.cachedAccessories) {
+      this.log.debug('Checking if accessory should be removed from cache:', accessory.displayName);
+      if (!discoveredAccessoryUUIDs.has(uuid)) {
+        this.log.info('Removing existing accessory from cache:', accessory.displayName);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
       }
     }
   }
