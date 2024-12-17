@@ -11,7 +11,6 @@ export interface HeatzyPiloteAccessoryConfig {
 export class HeatzyPiloteAccessory {
   private readonly enabledModes: Array<keyof typeof CONTROL_MODES>;
   private servicesByMode = new Map<keyof typeof CONTROL_MODES, Service>();
-  private cachedStateByMode = new Map<keyof typeof CONTROL_MODES, boolean>();
 
   constructor(
     private readonly platform: HeatzyChineseMultiswitchPlatform,
@@ -26,7 +25,6 @@ export class HeatzyPiloteAccessory {
       ...(this.platform.config.enableOff ? ['OFF' as const] : []),
     ];
     for (const mode of this.enabledModes) {
-      this.cachedStateByMode.set(mode, false);
       this.addSwitch(mode);
     }
 
@@ -46,18 +44,10 @@ export class HeatzyPiloteAccessory {
 
     const configuredName = `${this.config.includeAliases ? `${this.config.device.dev_alias} ` : ''}${DISPLAY_MODES[mode]}`;
     service.setCharacteristic(this.platform.Characteristic.ConfiguredName, configuredName);
-    service
-      .getCharacteristic(this.platform.Characteristic.On)
-      .onGet(() => this.getSwitchValue(mode))
+    service.getCharacteristic(this.platform.Characteristic.On)
       .onSet(value => this.setSwitchValue(mode, value as boolean));
 
     this.servicesByMode.set(mode, service);
-  }
-
-  private getSwitchValue(mode: keyof typeof CONTROL_MODES) {
-    const value = this.cachedStateByMode.get(mode)!;
-    this.log.debug(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): get handler called for mode ${mode} (value: ${value}).`);
-    return value;
   }
 
   private async setSwitchValue(mode: keyof typeof CONTROL_MODES, value: boolean) {
@@ -74,30 +64,26 @@ export class HeatzyPiloteAccessory {
 
     this.log.debug(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): setting mode to ${mode} via Heatzy API.`);
     await this.platform.heatzyClient.setDeviceMode(this.config.device.did, mode);
-
-    this.cachedStateByMode.set(mode, value);
-    this.enabledModes
-      .filter((m) => m !== mode)
-      .forEach((m) => this.cachedStateByMode.set(m, false));
+    this.setCurrentMode(mode);
   }
 
   private async syncStateWithHeatzy() {
     this.log.debug(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): syncing state with Heatzy API.`);
     const state = await this.platform.heatzyClient.getDevdataByDeviceId(this.config.device.did);
 
-    if (this.cachedStateByMode.get(state)) {
+    if (this.servicesByMode.get(state)!.getCharacteristic(this.platform.Characteristic.On).value) {
       return;
     }
 
     this.log.debug(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): state changed asynchronously. Updating cache. New state: ${state}.`);
-    this.cachedStateByMode.set(state, true);
-    this.servicesByMode.get(state)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
+    this.setCurrentMode(state);
+  }
+
+  private setCurrentMode(mode: keyof typeof CONTROL_MODES) {
+    this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
     this.enabledModes
-      .filter((m) => m !== state)
-      .forEach((m) => {
-        this.cachedStateByMode.set(m, false);
-        this.servicesByMode.get(m)!.getCharacteristic(this.platform.Characteristic.On).updateValue(false);
-      });
+      .filter((m) => m !== mode)
+      .forEach((m) => this.servicesByMode.get(m)!.getCharacteristic(this.platform.Characteristic.On).updateValue(false));
   }
 }
 
