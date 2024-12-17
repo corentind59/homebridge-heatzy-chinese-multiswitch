@@ -83,10 +83,10 @@ export class HeatzyClient {
       },
     });
     if (response.ok) {
-      const { token, expires_at } = await response.json() as { token: string; expires_at: number };
+      const { token, expire_at } = await response.json() as { token: string; expire_at: number };
       this.auth = {
         token,
-        expiration: expires_at * 1000,
+        expiration: expire_at * 1000,
       };
     } else {
       throw new Error('Heatzy Client: login attempt failed.');

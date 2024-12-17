@@ -66,11 +66,11 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
 
       if (cachedAccessory) {
         // Restore previously configured accessory
-        this.log.debug(`Restoring previously configured accessory: ${device.dev_alias} (ID: ${device.did})`);
+        this.log.info(`Restoring previously configured accessory: ${device.dev_alias} (ID: ${device.did})`);
         new HeatzyPiloteAccessory(this, cachedAccessory, device);
       } else {
         // Configure new accessory
-        this.log.debug(`Configuring new accessory: ${device.dev_alias} (ID: ${device.did})`);
+        this.log.info(`Configuring new accessory: ${device.dev_alias} (ID: ${device.did})`);
 
         const newAccessory = new this.api.platformAccessory(`Heatzy Pilote ${device.dev_alias}`, uuid, Categories.SWITCH);
 
@@ -81,7 +81,7 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
 
       for (const [uuid, accessory] of this.cachedAccessories) {
         if (!discoveredAccessoryUUIDs.has(uuid)) {
-          this.log.debug('Removing existing accessory from cache:', accessory.displayName);
+          this.log.info('Removing existing accessory from cache:', accessory.displayName);
           this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         }
       }

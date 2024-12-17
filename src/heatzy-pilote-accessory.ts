@@ -34,12 +34,15 @@ export class HeatzyPiloteAccessory {
 
   addSwitch(mode: keyof typeof CONTROL_MODES) {
     const service = this.accessory.getServiceById(this.platform.Service.Switch, mode) ||
-      this.accessory.addService(this.platform.Service.Switch, DISPLAY_MODES[mode], mode);
+      this.accessory.addService(this.platform.Service.Switch, `${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
 
+    service.setCharacteristic(this.platform.Characteristic.Name, DISPLAY_MODES[mode]);
     service
       .getCharacteristic(this.platform.Characteristic.On)
       .onGet(() => this.cachedStateByMode.get(mode)!)
       .onSet(value => this.toggleSwitch.call(this, mode, value as boolean));
+
+    this.servicesByMode.set(mode, service);
   }
 
   private async toggleSwitch(mode: keyof typeof CONTROL_MODES, value: boolean) {
