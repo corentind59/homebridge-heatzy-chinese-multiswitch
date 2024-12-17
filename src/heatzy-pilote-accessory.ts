@@ -38,7 +38,8 @@ export class HeatzyPiloteAccessory {
     const service = this.accessory.getServiceById(this.platform.Service.Switch, mode) ||
       this.accessory.addService(this.platform.Service.Switch, `Heatzy Pilote ${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
 
-    service.setCharacteristic(this.platform.Characteristic.ConfiguredName, DISPLAY_MODES[mode]);
+    const configuredName = `${this.accessory.context.includeAliases ? `${this.device.dev_alias} ` : ''}${DISPLAY_MODES[mode]}`;
+    service.setCharacteristic(this.platform.Characteristic.ConfiguredName, configuredName);
     service
       .getCharacteristic(this.platform.Characteristic.On)
       .onGet(() => this.getSwitchValue(mode))

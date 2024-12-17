@@ -29,6 +29,12 @@
         "type": "boolean",
         "default": false,
         "description": "Enable off mode for all devices"
+      },
+      "includeAliasesInConfiguredNames": {
+        "title": "Include aliases in configured names",
+        "type": "boolean",
+        "default": false,
+        "description": "If true, device names from Heatzy app will be included in HomeKit names (defaults to false)."
       }
     }
   }

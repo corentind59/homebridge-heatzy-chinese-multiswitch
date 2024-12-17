@@ -30,7 +30,6 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
       username: this.config.heatzyUsername,
       password: this.config.heatzyPassword,
     });
-
     this.log.debug('Initializing platform:', PLATFORM_NAME);
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
@@ -74,6 +73,7 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
         this.log.info(`Configuring new accessory: ${device.dev_alias} (ID: ${device.did})`);
 
         const newAccessory = new this.api.platformAccessory(`Heatzy Pilote ${device.dev_alias}`, uuid, Categories.SWITCH);
+        newAccessory.context.includeAliases = this.config.includeAliasesInConfiguredNames;
 
         new HeatzyPiloteAccessory(this, newAccessory, device, this.log);
         this.cachedAccessories.set(uuid, newAccessory);
