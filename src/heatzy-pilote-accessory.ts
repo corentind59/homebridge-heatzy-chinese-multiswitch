@@ -51,11 +51,15 @@ export class HeatzyPiloteAccessory {
     this.log.debug(`Toggling switch for Heatzy Pilote ${this.device.dev_alias} in mode ${mode} with value ${value}...`);
     this.cachedStateByMode.set(mode, value);
 
-    if (!value) {
+    if (Array.from(this.cachedStateByMode.values()).every(v => !v)) {
+      this.log.debug(`All switches are off for Heatzy Pilote ${this.device.dev_alias}, restoring previous mode.`);
       setTimeout(() => {
-        this.log.debug(`Restoring switch for Heatzy Pilote ${this.device.dev_alias} in mode ${mode}.`);
         this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
       }, 1_000);
+      return;
+    }
+
+    if (!value) {
       return;
     }
 
