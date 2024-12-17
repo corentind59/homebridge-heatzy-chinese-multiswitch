@@ -30,51 +30,67 @@ export class HeatzyPiloteAccessory {
       .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.did);
 
     this.syncStateWithHeatzy();
-    setInterval(this.syncStateWithHeatzy.bind(this), 60_000);
+    setInterval(() => this.syncStateWithHeatzy(), 10_000);
   }
 
   addSwitch(mode: keyof typeof CONTROL_MODES) {
-    this.log.debug(`Adding switch for Heatzy Pilote ${this.device.dev_alias} for mode ${mode}.`);
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}: adding switch for mode ${mode}.`);
     const service = this.accessory.getServiceById(this.platform.Service.Switch, mode) ||
       this.accessory.addService(this.platform.Service.Switch, `Heatzy Pilote ${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
 
     service.setCharacteristic(this.platform.Characteristic.ConfiguredName, DISPLAY_MODES[mode]);
     service
       .getCharacteristic(this.platform.Characteristic.On)
-      .onGet(() => this.cachedStateByMode.get(mode)!)
-      .onSet(value => this.toggleSwitch(mode, value as boolean));
+      .onGet(() => this.getSwitchValue(mode))
+      .onSet(value => this.setSwitchValue(mode, value as boolean));
 
     this.servicesByMode.set(mode, service);
   }
 
-  private async toggleSwitch(mode: keyof typeof CONTROL_MODES, value: boolean) {
-    this.log.debug(`Toggling switch for Heatzy Pilote ${this.device.dev_alias} in mode ${mode} with value ${value}...`);
-    this.cachedStateByMode.set(mode, value);
+  private getSwitchValue(mode: keyof typeof CONTROL_MODES) {
+    const value = this.cachedStateByMode.get(mode)!;
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): get handler called for mode ${mode} (value: ${value}).`);
+    return value;
+  }
 
-    if (Array.from(this.cachedStateByMode.values()).every(v => !v)) {
-      this.log.debug(`All switches are off for Heatzy Pilote ${this.device.dev_alias}, restoring previous mode.`);
+  private async setSwitchValue(mode: keyof typeof CONTROL_MODES, value: boolean) {
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): set handler called for mode ${mode} (value: ${value}).`);
+
+    // Prevent user from turning off all switches
+    if (!value) {
+      this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): all switches are off, restoring previous value.`);
       setTimeout(() => {
         this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
       }, 1_000);
       return;
     }
 
-    if (!value) {
-      return;
-    }
-
-    this.log.debug(`Setting Heatzy Pilote ${this.device.dev_alias} to mode ${mode} via Heatzy API.`);
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): setting mode to ${mode} via Heatzy API.`);
     await this.platform.heatzyClient.setDeviceMode(this.device.did, mode);
+
+    this.cachedStateByMode.set(mode, value);
     this.enabledModes
       .filter((m) => m !== mode)
-      .forEach((m) => this.servicesByMode.get(m)!.getCharacteristic(this.platform.Characteristic.On).updateValue(false));
+      .forEach((m) => this.cachedStateByMode.set(m, false));
   }
 
   private async syncStateWithHeatzy() {
-    this.log.debug(`Syncing state for Heatzy Pilote ${this.device.dev_alias}...`);
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): syncing state with Heatzy API.`);
     const state = await this.platform.heatzyClient.getDevdataByDeviceId(this.device.did);
-    this.log.debug(`Heatzy Pilote ${this.device.dev_alias} is currently in mode ${state}.`);
+
+    if (this.cachedStateByMode.get(state)) {
+      return;
+    }
+
+    this.log.debug(`Heatzy Pilote Accessory (${this.device.dev_alias}): state changed asynchronously. Updating cache. New state: ${state}.`);
+    this.cachedStateByMode.set(state, true);
     this.servicesByMode.get(state)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
+    this.enabledModes
+      .filter((m) => m !== state)
+      .forEach((m) => {
+        this.cachedStateByMode.set(m, false);
+        this.servicesByMode.get(m)!.getCharacteristic(this.platform.Characteristic.On).updateValue(false);
+      });
   }
 }
 
