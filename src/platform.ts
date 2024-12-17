@@ -9,7 +9,7 @@ import {
   Service,
 } from 'homebridge';
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
-import { HeatzyPiloteAccessory } from './heatzy-pilote-accessory.js';
+import { HeatzyPiloteAccessory, HeatzyPiloteAccessoryConfig } from './heatzy-pilote-accessory.js';
 import { HeatzyClient } from './heatzy-client.js';
 
 export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
@@ -63,19 +63,23 @@ export class HeatzyChineseMultiswitchPlatform implements DynamicPlatformPlugin {
       const uuid = this.api.hap.uuid.generate(device.did);
       discoveredAccessoryUUIDs.add(uuid);
       const cachedAccessory = this.cachedAccessories.get(uuid);
+      const accessoryConfig: HeatzyPiloteAccessoryConfig = {
+        device,
+        includeAliases: this.config.includeAliasesInConfiguredNames,
+        heatzySyncInterval: this.config.heatzySyncInterval,
+      };
 
       if (cachedAccessory) {
         // Restore previously configured accessory
         this.log.info(`Restoring previously configured accessory: ${device.dev_alias} (ID: ${device.did})`);
-        new HeatzyPiloteAccessory(this, cachedAccessory, device, this.log);
+        new HeatzyPiloteAccessory(this, cachedAccessory, this.log, accessoryConfig);
       } else {
         // Configure new accessory
         this.log.info(`Configuring new accessory: ${device.dev_alias} (ID: ${device.did})`);
 
         const newAccessory = new this.api.platformAccessory(`Heatzy Pilote ${device.dev_alias}`, uuid, Categories.SWITCH);
-        newAccessory.context.includeAliases = this.config.includeAliasesInConfiguredNames;
 
-        new HeatzyPiloteAccessory(this, newAccessory, device, this.log);
+        new HeatzyPiloteAccessory(this, newAccessory, this.log, accessoryConfig);
         this.cachedAccessories.set(uuid, newAccessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [newAccessory]);
       }
