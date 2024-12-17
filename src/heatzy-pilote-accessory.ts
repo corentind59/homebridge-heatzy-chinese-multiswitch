@@ -1,5 +1,5 @@
 import type { HeatzyChineseMultiswitchPlatform } from './platform.js';
-import { PlatformAccessory, Service } from 'homebridge';
+import type { PlatformAccessory, Service } from 'homebridge';
 import { CONTROL_MODES, HeatzyBinding } from './heatzy-client.js';
 
 export class HeatzyPiloteAccessory {
@@ -34,20 +34,24 @@ export class HeatzyPiloteAccessory {
 
   addSwitch(mode: keyof typeof CONTROL_MODES) {
     const service = this.accessory.getServiceById(this.platform.Service.Switch, mode) ||
-      this.accessory.addService(this.platform.Service.Switch, `${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
+      this.accessory.addService(this.platform.Service.Switch, `Heatzy Pilote ${this.device.dev_alias} ${DISPLAY_MODES[mode]}`, mode);
 
-    service.setCharacteristic(this.platform.Characteristic.Name, DISPLAY_MODES[mode]);
+    service.setCharacteristic(this.platform.Characteristic.ConfiguredName, DISPLAY_MODES[mode]);
     service
       .getCharacteristic(this.platform.Characteristic.On)
       .onGet(() => this.cachedStateByMode.get(mode)!)
-      .onSet(value => this.toggleSwitch.call(this, mode, value as boolean));
+      .onSet(value => this.toggleSwitch(mode, value as boolean));
 
     this.servicesByMode.set(mode, service);
   }
 
   private async toggleSwitch(mode: keyof typeof CONTROL_MODES, value: boolean) {
+    this.cachedStateByMode.set(mode, value);
+
     if (!value) {
-      this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
+      setTimeout(() => {
+        this.servicesByMode.get(mode)!.getCharacteristic(this.platform.Characteristic.On).updateValue(true);
+      }, 1_000);
       return;
     }
 
