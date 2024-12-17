@@ -2,7 +2,7 @@
   "name": "@corentind/homebridge-heatzy-chinese-multiswitch",
   "displayName": "Heatzy Chinese Multiswitch",
   "type": "module",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Homebridge platform that connects to Heatzy account and sync Heatzy Pilote devices with chinese support.",
   "author": "Corentin Delannoy <corentin.delannoy2@gmail.com>",
   "license": "Apache-2.0",
