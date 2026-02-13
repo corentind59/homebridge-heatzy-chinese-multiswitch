@@ -71,7 +71,12 @@ export class HeatzyPiloteAccessory {
     this.log.debug(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): syncing state with Heatzy API.`);
     const state = await this.platform.heatzyClient.getDevdataByDeviceId(this.config.device.did);
 
-    if (this.servicesByMode.get(state)!.getCharacteristic(this.platform.Characteristic.On).value) {
+    const serviceForCurrentState = this.servicesByMode.get(state);
+    if (!serviceForCurrentState) {
+      this.log.warn(`Heatzy Pilote Accessory (${this.config.device.dev_alias}): received unknown state from Heatzy API: ${state}. Skipping update.`);
+      return;
+    }
+    if (serviceForCurrentState.getCharacteristic(this.platform.Characteristic.On).value) {
       return;
     }
 
